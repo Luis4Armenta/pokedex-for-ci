@@ -22,3 +22,7 @@ jobs:
         run: npm install --no-audit --no-fund --no-optional
       - name: Lint
         run: npm run eslint
+      - name: BUILD
+        run: npm run build
+      - name: TESTS
+        run: npm test
