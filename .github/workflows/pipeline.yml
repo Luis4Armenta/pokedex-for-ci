@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-        
+
       - name: Getting the repository
         uses: actions/checkout@v3
         with:
@@ -26,3 +26,9 @@ jobs:
         run: npm run build
       - name: TESTS
         run: npm test
+      - name: E2E TESTS
+        uses: cypress-io/github-action@v2
+        with:
+          command: npm run test:e2e
+          start: npm run start-test
+          wait-on: http://localhost:5000
