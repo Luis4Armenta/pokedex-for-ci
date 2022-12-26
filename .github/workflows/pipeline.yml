@@ -39,6 +39,7 @@ jobs:
           start: npm run start-test
           wait-on: http://localhost:5000
       - name: Deploy web services
+        if: ${{ github.event_name == 'push' }}
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
