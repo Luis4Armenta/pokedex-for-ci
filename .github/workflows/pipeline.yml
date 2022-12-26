@@ -32,3 +32,11 @@ jobs:
           command: npm run test:e2e
           start: npm run start-test
           wait-on: http://localhost:5000
+      - name: Deploy web services
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'pokedex-l'
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D0B669B2E160495D92865A4B35EF41DE }}
+          package: .
