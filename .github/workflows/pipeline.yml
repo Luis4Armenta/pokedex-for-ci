@@ -12,14 +12,17 @@ on:
       - synchronize
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  avoid_reduncy:
+    runs-on: ubuntu-18.04
     steps:
       - name: Cancel previous redundant Builds
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
 
+  lint:
+    runs-on: ubuntu-18.04
+    steps:
       - name: Getting the repository
         uses: actions/checkout@v3
         with:
@@ -32,16 +35,87 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run eslint
+    
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Getting the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm ci
       - name: BUILD
         run: npm run build
+      - uses: actions/upload-artifact@v3 # Uploading de build
+        with:
+          name: dist
+          path: dist
+    
+  test:
+    needs: [lint, build] #we need await for the lint and build jobs
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Getting the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm ci
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
       - name: TESTS
         run: npm test
+
+  e2e:
+    needs: [lint, build] 
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Getting the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm ci
+      - uses: actions/download-artifact@v3 # downloading the build
+        with:
+          name: dist
+          path: dist
       - name: E2E TESTS
         uses: cypress-io/github-action@v2
         with:
           command: npm run test:e2e
           start: npm run start-test
           wait-on: http://localhost:5000
+
+
+  deploy:
+    needs: [build, test, e2e] 
+    runs-on: ubuntu-latest
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
       - name: Deploy web services
         if: ${{ github.event_name == 'push' }}
         id: deploy-to-webapp
